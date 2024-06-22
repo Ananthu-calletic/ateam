@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:ateam/helper/globalfunction.dart';
 import 'package:ateam/helper/config.dart';
 import 'package:ateam/helper/controller.dart';
@@ -189,8 +188,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
           bounds,
         ),
       );
-    } else {
-      print('Map controller is null');
-    }
+    } else {}
   }
 }

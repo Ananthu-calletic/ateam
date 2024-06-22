@@ -1,6 +1,6 @@
 import 'package:ateam/helper/config.dart';
 import 'package:ateam/helper/trip.dart';
-import 'package:ateam/screens/resultscreen.dart';
+import 'package:ateam/screens/navigationscreen.dart';
 import 'package:ateam/utils/colors/colors.dart';
 import 'package:ateam/utils/reusable_widgets/reusable_buttons.dart';
 import 'package:ateam/utils/reusable_widgets/reusable_widgets.dart';
