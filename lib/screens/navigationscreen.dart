@@ -1,4 +1,5 @@
-import 'dart:math';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:ateam/helper/globalfunction.dart';
 import 'package:ateam/helper/config.dart';
 import 'package:ateam/helper/controller.dart';
@@ -141,53 +142,85 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  void _drawRoute() {
-    if (_mapController != null) {
-      List<LatLng> route = [
-        LatLng(widget.startLat, widget.startLong),
-        LatLng(widget.endLat, widget.endLong),
-      ];
-
-      _mapController!.addSymbol(
+  void _drawRoute() async {
+    List<LatLng> routeCoordinates = await _getRouteCoordinates();
+    if (routeCoordinates.isNotEmpty) {
+      // Draw markers at start and end points
+      _mapController?.addSymbol(
         SymbolOptions(
-          iconImage: 'images/marker.png',
-          iconSize: 0.1,
+          iconImage: 'assets/images/marker.png',
+          iconSize: 1.0,
           geometry: LatLng(widget.startLat, widget.startLong),
         ),
       );
-
-      _mapController!.addSymbol(
+      _mapController?.addSymbol(
         SymbolOptions(
-          iconImage: 'images/marker.png',
-          iconSize: 0.1,
+          iconImage: 'assets/images/marker.png',
+          iconSize: 1.0,
           geometry: LatLng(widget.endLat, widget.endLong),
         ),
       );
 
-      _mapController!.addLine(
+      // Draw route polyline
+      _mapController?.addLine(
         LineOptions(
-          geometry: route,
+          geometry: routeCoordinates,
           lineColor: '#ff0000',
           lineWidth: 5.0,
         ),
       );
 
-      LatLngBounds bounds = LatLngBounds(
-        southwest: LatLng(
-          min(widget.startLat, widget.endLat),
-          min(widget.startLong, widget.endLong),
-        ),
-        northeast: LatLng(
-          max(widget.startLat, widget.endLat),
-          max(widget.startLong, widget.endLong),
-        ),
-      );
-
-      _mapController!.animateCamera(
+      // Adjust camera to fit the route
+      LatLngBounds bounds = _getBounds(routeCoordinates);
+      _mapController?.animateCamera(
         CameraUpdate.newLatLngBounds(
           bounds,
         ),
       );
-    } else {}
+    }
+  }
+
+  LatLngBounds _getBounds(List<LatLng> routeCoordinates) {
+    double minLat = routeCoordinates
+        .map((coord) => coord.latitude)
+        .reduce((a, b) => a < b ? a : b);
+    double minLong = routeCoordinates
+        .map((coord) => coord.longitude)
+        .reduce((a, b) => a < b ? a : b);
+    double maxLat = routeCoordinates
+        .map((coord) => coord.latitude)
+        .reduce((a, b) => a > b ? a : b);
+    double maxLong = routeCoordinates
+        .map((coord) => coord.longitude)
+        .reduce((a, b) => a > b ? a : b);
+
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLong),
+      northeast: LatLng(maxLat, maxLong),
+    );
+  }
+
+  Future<List<LatLng>> _getRouteCoordinates() async {
+    String accessToken = mapboxtoken;
+    String apiUrl =
+        'https://api.mapbox.com/directions/v5/mapbox/driving/${widget.startLong},${widget.startLat};${widget.endLong},${widget.endLat}?steps=true&geometries=geojson&access_token=$accessToken';
+
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        Map<String, dynamic> data = json.decode(response.body);
+        List<dynamic> routes = data['routes'];
+        if (routes.isNotEmpty) {
+          Map<String, dynamic> route = routes[0];
+          Map<String, dynamic> geometry = route['geometry'];
+          String encodedRoute = geometry['coordinates'].toString();
+          List<dynamic> points = jsonDecode(encodedRoute);
+          List<LatLng> coordinates =
+              points.map((point) => LatLng(point[1], point[0])).toList();
+          return coordinates;
+        }
+      }
+    } catch (e) {}
+    return [];
   }
 }
