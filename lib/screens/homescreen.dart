@@ -280,7 +280,6 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       });
     } else {
-      // Error fetching data
       print('Failed to fetch data: ${response.statusCode}');
     }
   }
